@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Snake</title>
+    <style>
+        * { padding: 0; margin: 0; }
+        canvas { background: #000000; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="1200" height="700"></canvas>
+
+<script>
+    //  create canvas
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+    const size = 20;
+    const upKey = 87;
+    const downKey = 83;
+    const rightKey = 68;
+    const leftKey = 65;
+    const upArrow = 38;
+    const downArrow = 40;
+    const rightArrow = 39;
+    const leftArrow = 37;
+    const spaceBar = 32;
+    const pause = 27;
+    var playAgain = false;
+    var upPressed = false;
+    var paused = false;
+    var downPressed = false;
+    var rightPressed = false;
+    var leftPressed = false;
+    var gameOver = false;
+    var color = "#7bdd4b";
+    const blocksPerAdd = 5;
+    var score = -blocksPerAdd;
+    var blockMoved = false;
+    var randomBlock = new Block(0, 0, "#dd2529");
+    var blocksToAdd = 0;
+    var highscore = localStorage.getItem("highscore");
+    if(highscore === null){
+        localStorage.setItem("highscore", score);
+    }
+
+    blocks = [new Block(canvas.width/2, canvas.height/2 + 10, color)];
+
+    function Block(x, y, color){
+        this.x = x;
+        this.y = y;
+        this.dx = 0;
+        this.dy = 0;
+        this.show = function(){
+            ctx.beginPath();
+            ctx.rect(this.x, this.y, size, size);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.closePath();
+        };
+        this.update = function(){
+            this.y += this.dy;
+            this.x += this.dx;
+        }
+    }
+
+    moveBlock();
+
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+
+    function keyDownHandler(e) {
+        if (e.keyCode === upKey || e.keyCode === upArrow) {
+            rightPressed = false;
+            leftPressed = false;
+            downPressed = false;
+            upPressed = true;
+        }
+
+        if(e.keyCode === downKey || e.keyCode === downArrow) {
+            rightPressed = false;
+            leftPressed = false;
+            upPressed = false;
+            downPressed = true;
+        }
+
+        if(e.keyCode === rightKey || e.keyCode === rightArrow) {
+            upPressed = false;
+            downPressed = false;
+            leftPressed = false;
+            rightPressed = true;
+        }
+
+        if(e.keyCode === leftKey || e.keyCode === leftArrow) {
+            upPressed = false;
+            downPressed = false;
+            rightPressed = false;
+            leftPressed = true;
+        }
+        if(e.keyCode === spaceBar) {
+            playAgain = true;
+        }
+        if(e.keyCode === pause) {
+            if(!paused)paused = true;
+            else if(paused)paused = false;
+        }
+
+    }
+
+    function keyUpHandler(e) {
+        if (e.keyCode === upKey) {
+            upPressed = false;
+        }
+
+        if(e.keyCode === downKey) {
+            downPressed = false;
+        }
+
+        if(e.keyCode === rightKey) {
+            rightPressed = false;
+        }
+
+        if(e.keyCode === leftKey) {
+            leftPressed = false;
+        }
+        if(e.keyCode === spaceBar) {
+            playAgain = false;
+        }
+
+    }
+
+    function newBlock() {
+        if(blocksToAdd > 0) {
+            blocks.push(new Block(blocks[blocks.length - 1].x - blocks[blocks.length - 1].dx,
+                blocks[blocks.length - 1].y - blocks[blocks.length - 1].dy, color));
+            blocksToAdd -= 1;
+        }
+    }
+
+    function moveBlock() {
+        blockMoved = false;
+        while (!blockMoved) {
+            var tempx = Math.round(Math.random() * canvas.width);
+            var tempy = Math.round(Math.random() * canvas.height);
+            randomBlock.x = tempx - (tempx % size);
+            randomBlock.y = tempy - (tempy % size);
+            for(var i = 0; i < blocks.length; i++){
+                if((randomBlock.x === blocks[i].x && randomBlock.y === blocks[i].y)) {
+                    break;
+                }
+                if(i === blocks.length-1) {
+                    blockMoved = true;
+                }
+            }
+        }
+        score += blocksPerAdd;
+    }
+
+    function update(){
+        for(var i = blocks.length - 1; i > 0; i--) {
+            blocks[i].dx = blocks[i-1].dx;
+            blocks[i].dy = blocks[i-1].dy;
+        }
+
+        if(upPressed === true) {
+            if(!(blocks[0].dy === 20 && blocks.length > 1)){
+                blocks[0].dx = 0;
+                blocks[0].dy = -20
+            }
+        }
+
+        else if(downPressed === true) {
+            if(!(blocks[0].dy === -20 && blocks.length > 1)){
+                blocks[0].dx = 0;
+                blocks[0].dy = 20;
+            }
+
+        }
+
+        else if(rightPressed === true) {
+            if(!(blocks[0].dx === -20 && blocks.length > 1)){
+                blocks[0].dy = 0;
+                blocks[0].dx = 20;
+            }
+
+        }
+
+        else if(leftPressed === true) {
+            if(!(blocks[0].dx === 20 && blocks.length > 1)){
+                blocks[0].dy = 0;
+                blocks[0].dx = -20;
+            }
+        }
+    }
+
+    function printScore(){
+        ctx.font = "20px TimesRoman";
+        ctx.fillStyle = "#fffd08";
+        ctx.fillText("Score: " + score, 7 * canvas.width / 8, 15 * canvas.height / 16);
+        ctx.fillText("Highscore: " + highscore, 7 * canvas.width / 8, 15 * canvas.height / 16 + 20);
+    }
+
+    function collision(){
+        if(blocks[0].x+size > canvas.width || blocks[0].x < 0 || blocks[0].y < 0 || blocks[0].y + size > canvas.height){
+            gameOver = true;
+        }
+        for(var i = 1; i < blocks.length; i++) {
+            if(blocks[0].x === blocks[i].x && blocks[0].y === blocks[i].y) {
+                gameOver = true;
+            }
+        }
+    }
+
+    function draw() {
+
+        if(!gameOver) {
+            if(!paused){
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (var i = 0; i < blocks.length; i++) {
+                    blocks[i].update();
+                    blocks[i].show();
+                }
+                randomBlock.show();
+                if (blocks[0].x === randomBlock.x && blocks[0].y === randomBlock.y) {
+                    moveBlock();
+                    blocksToAdd += blocksPerAdd;
+                }
+
+                newBlock();
+                update();
+                collision();
+                if (score > highscore) {
+                    localStorage.setItem("highscore", score);
+                }
+                highscore = +localStorage.getItem("highscore")
+            }
+            else if(paused){
+                ctx.font = "50px TimesRoman";
+                ctx.fillStyle = "#2b2edd";
+                ctx.fillText("PAUSED", canvas.width/2 -100, canvas.height/2);
+            }
+        }
+
+        else if (gameOver) {
+            paused = false;
+            ctx.font = "50px TimesRoman";
+            ctx.fillStyle = "#dd1030";
+            ctx.fillText("GAME OVER", canvas.width/2 -112.5 , canvas.height/2);
+            ctx.fillText("Press Spacebar To Play Again", canvas.width/2 - 300, canvas.height/2 + 100);
+
+            if(playAgain){
+                upPressed = false;
+                paused = false;
+                downPressed = false;
+                rightPressed = false;
+                leftPressed = false;
+                gameOver = false;
+                playAgain = false;
+                blocks = [new Block(canvas.width/2, canvas.height/2 + 10, color)];
+                score = -blocksPerAdd;
+                blocksToAdd = 0;
+                moveBlock();
+            }
+        }
+        printScore();
+    }
+
+    setInterval(draw, 50);
+
+</script>
+
+</body>
+</html>
